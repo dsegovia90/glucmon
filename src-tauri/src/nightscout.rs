@@ -1,6 +1,9 @@
 use dotenv_codegen::dotenv;
 use serde::Deserialize;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    io::Read,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,12 +33,14 @@ pub fn get_glucose_data() -> anyhow::Result<String> {
     let nightscout_api_token = dotenv!("NIGHTSCOUT_API_TOKEN");
     let is_mmmol = dotenv!("IS_MMMOL");
 
-    let mut data = reqwest
+    let response = reqwest
         .get(format!("{nightscout_url}/api/v1/entries"))
         .header("accept", "application/json")
         .header("api-secret", nightscout_api_token)
-        .send()?
-        .json::<Vec<NightscoutEntry>>()?;
+        .query(&[("count", "1")])
+        .send()?;
+
+    let mut data = response.json::<Vec<NightscoutEntry>>()?;
 
     data.sort_by(|a, b| b.date.cmp(&a.date));
 
