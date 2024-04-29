@@ -1,3 +1,4 @@
+use dotenv_codegen::dotenv;
 use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -25,10 +26,9 @@ struct NightscoutEntry {
 
 pub fn get_glucose_data() -> anyhow::Result<String> {
     let reqwest = reqwest::blocking::Client::new();
-    let nightscout_url = std::env::var("NIGHTSCOUT_URL").expect("NIGHTSCOUT_URL must be set.");
-    let nightscout_api_token =
-        std::env::var("NIGHTSCOUT_API_TOKEN").expect("NIGHTSCOUT_URL must be set.");
-    let is_mmmol = std::env::var("IS_MMMOL").unwrap_or("true".to_string());
+    let nightscout_url = dotenv!("NIGHTSCOUT_URL");
+    let nightscout_api_token = dotenv!("NIGHTSCOUT_API_TOKEN");
+    let is_mmmol = dotenv!("IS_MMMOL");
 
     let mut data = reqwest
         .get(format!("{nightscout_url}/api/v1/entries"))
@@ -40,7 +40,7 @@ pub fn get_glucose_data() -> anyhow::Result<String> {
     data.sort_by(|a, b| b.date.cmp(&a.date));
 
     let last_entry = data.first().unwrap();
-    let divider = if is_mmmol == *"true" { 18.0 } else { 1.0 };
+    let divider = if is_mmmol == "true" { 18.0 } else { 1.0 };
     let glucose_value = last_entry.sgv / divider;
     let start = SystemTime::now();
     let since_the_epoch = start
