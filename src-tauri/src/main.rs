@@ -31,7 +31,7 @@ fn main() {
 
         thread::spawn(move || loop {
             std::thread::sleep(std::time::Duration::from_millis(10000));
-            handle.trigger_global("update_glucose", Some("halo?".to_string()));
+            handle.trigger_global("update_glucose", None);
         });
         Ok(())
     });
