@@ -30,6 +30,7 @@ fn main() {
     let global_app = tauri::Builder::default()
         .system_tray(tray)
         .setup(|app| {
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let handle = app.handle();
             initialize_config_data(app).unwrap();
 
