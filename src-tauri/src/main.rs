@@ -60,7 +60,7 @@ fn main() {
     let global_app = tauri::Builder::default()
         .system_tray(tray)
         .setup(move |app| {
-            #[cfg(target_os = "darwin")]
+            #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             let handle = app.handle();
