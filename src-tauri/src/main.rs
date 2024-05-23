@@ -31,19 +31,19 @@ fn create_icon_from_path(path: &str) -> Result<Icon, Box<dyn std::error::Error>>
 
 fn get_icon_path_from_direction(direction: &str) -> String {
     match direction {
-        "Flat" => "icons/glucmon_icon_FLAT.png".to_string(),
-        "FortyFiveUp" => "icons/glucmon_icon_FORTYFIVE-UP.png".to_string(),
-        "FortyFiveDown" => "icons/glucmon_icon_FORTYFIVE-DOWN.png".to_string(),
-        "SingleUp" => "icons/glucmon_icon_SINGLE-UP.png".to_string(),
-        "SingleDown" => "icons/glucmon_icon_SINGLE-DOWN.png".to_string(),
-        "DoubleUp" => "icons/glucmon_icon_DOUBLE-UP.png".to_string(),
-        "DoubleDown" => "icons/glucmon_icon_DOUBLE-DOWN.png".to_string(),
-        "TripleUp" => "icons/glucmon_icon_TRIPLE-UP.png".to_string(),
-        "TripleDown" => "icons/glucmon_icon_TRIPLE-DOWN.png".to_string(),
-        "RATE OUT OF RANGE" => "icons/glucmon_icon_NOT-WORKING.png".to_string(),
-        "NOT COMPUTABLE" => "icons/glucmon_icon_NOT-WORKING.png".to_string(),
-        "NONE" => "icons/glucmon_icon.png".to_string(),
-        _ => "icons/glucmon_icon.png".to_string(),
+        "Flat" => "icons/tray/glucmon_icon_FLAT.png".to_string(),
+        "FortyFiveUp" => "icons/tray/glucmon_icon_FORTYFIVE-UP.png".to_string(),
+        "FortyFiveDown" => "icons/tray/glucmon_icon_FORTYFIVE-DOWN.png".to_string(),
+        "SingleUp" => "icons/tray/glucmon_icon_SINGLE-UP.png".to_string(),
+        "SingleDown" => "icons/tray/glucmon_icon_SINGLE-DOWN.png".to_string(),
+        "DoubleUp" => "icons/tray/glucmon_icon_DOUBLE-UP.png".to_string(),
+        "DoubleDown" => "icons/tray/glucmon_icon_DOUBLE-DOWN.png".to_string(),
+        "TripleUp" => "icons/tray/glucmon_icon_TRIPLE-UP.png".to_string(),
+        "TripleDown" => "icons/tray/glucmon_icon_TRIPLE-DOWN.png".to_string(),
+        "RATE OUT OF RANGE" => "icons/tray/glucmon_icon_NOT-WORKING.png".to_string(),
+        "NOT COMPUTABLE" => "icons/tray/glucmon_icon_NOT-WORKING.png".to_string(),
+        "NONE" => "icons/tray/glucmon_icon.png".to_string(),
+        _ => "icons/tray/glucmon_icon.png".to_string(),
     }
 }
 fn main() {
