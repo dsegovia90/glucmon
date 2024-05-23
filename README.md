@@ -18,3 +18,10 @@ Since TypeScript cannot handle type information for `.vue` imports, they are shi
 2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
 
 You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+
+#### Icons
+
+To update App Icons:
+
+1. update the ./app-icon.png
+2. Run `cargo tauri icon` or `npm run tauri icon` depending on your setup
