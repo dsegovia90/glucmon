@@ -9,6 +9,6 @@ onMounted(async () => {
 
 <template>
   <div class="container">
-    <h1 class="underline">Welcome to Tauri!</h1>
+    <h1 class="underline">Welcome to Glucmon!</h1>
   </div>
 </template>

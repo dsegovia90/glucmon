@@ -11,8 +11,8 @@
   },
   "tauri": {
     "systemTray": {
-      "iconPath": "icons/glucmon_icon.png",
-      "iconAsTemplate": true
+      "iconPath": "icons/tray/glucmon_icon.png",
+      "iconAsTemplate": false
     },
     "allowlist": {
       "all": false,
