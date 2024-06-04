@@ -81,7 +81,7 @@ fn main() {
                     tauri::WindowBuilder::new(
                         app,
                         "local",
-                        tauri::WindowUrl::App("settings.html".into()),
+                        tauri::WindowUrl::App("index.html".into()),
                     )
                     .inner_size(400.0, 400.0)
                     .title("Glucmon | Settings")
