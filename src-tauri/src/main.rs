@@ -6,12 +6,12 @@ static TRAY_MENU_ITEM_GLUCOSE_ENTRY: &str = "tray_menu_item_glucose_entry";
 static TRAY_MENU_ITEM_QUIT_ENTRY: &str = "tray_menu_item_quit_entry";
 static TRAY_MENU_ITEM_QUIT_DISPLAY: &str = "Quit Glucmon Completely";
 
+use crate::nightscout::Direction;
 use config_data::initialize_config_data;
 use nightscout::get_glucose_data;
-use crate::nightscout::Direction;
 use std::thread;
 use tauri::{
-    CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem
+    CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
 };
 
 mod config_data;
@@ -22,7 +22,12 @@ use tauri::Icon;
 fn create_icon_from_path(path: &str) -> Result<Icon, Box<dyn std::error::Error>> {
     let image = image::open(path)?.to_rgba8();
     let (width, height) = image.dimensions();
-    let resized_image = image::imageops::resize(&image, width / 2, height / 2, image::imageops::FilterType::Nearest);
+    let resized_image = image::imageops::resize(
+        &image,
+        width / 2,
+        height / 2,
+        image::imageops::FilterType::Nearest,
+    );
     Ok(Icon::Rgba {
         rgba: resized_image.into_vec(),
         width: width / 2,
@@ -30,9 +35,9 @@ fn create_icon_from_path(path: &str) -> Result<Icon, Box<dyn std::error::Error>>
     })
 }
 
-fn get_icon_path_from_direction(direction: &Direction, glucose_value: &String) -> String {
+fn get_icon_path_from_direction(direction: &Direction, glucose_value: &str) -> String {
     let base_path = "icons/tray/";
-    
+
     // Parse the glucose_value string to f64
     let parts: Vec<&str> = glucose_value.split_whitespace().collect();
     let glucose_str = parts[0];
@@ -40,8 +45,7 @@ fn get_icon_path_from_direction(direction: &Direction, glucose_value: &String) -
         Ok(value) => value,
         Err(_) => return format!("{}glucmon_icon_NOT-CONFIGURED.png", base_path),
     };
-    // println!("{} - {}", glucose_str, glucose_f64);
-    
+
     let severity = match glucose_f64 {
         v if v < 3.0 => "urgent",
         v if v < 3.885 => "concern",
@@ -50,12 +54,9 @@ fn get_icon_path_from_direction(direction: &Direction, glucose_value: &String) -
         _ => "urgent",
     };
 
-    // println!("{} - {}", glucose_str, severity);
-    
-
     let direction_str = match direction {
         Direction::Flat => "flat",
-        Direction::FortyFiveUp => "1_up", // "fortyfive_up", 
+        Direction::FortyFiveUp => "1_up",     // "fortyfive_up",
         Direction::FortyFiveDown => "1_down", // "fortyfive_down",
         Direction::SingleUp => "1_up",
         Direction::SingleDown => "1_down",
@@ -73,7 +74,8 @@ fn get_icon_path_from_direction(direction: &Direction, glucose_value: &String) -
 }
 fn main() {
     let (glucose_value_str, direction) = get_glucose_data().unwrap();
-    let tray_menu_glucose_data_item = CustomMenuItem::new(TRAY_MENU_ITEM_GLUCOSE_ENTRY, &glucose_value_str);
+    let tray_menu_glucose_data_item =
+        CustomMenuItem::new(TRAY_MENU_ITEM_GLUCOSE_ENTRY, &glucose_value_str);
     let tray_menu_quite_item =
         CustomMenuItem::new(TRAY_MENU_ITEM_QUIT_ENTRY, TRAY_MENU_ITEM_QUIT_DISPLAY);
     let tray_menu = SystemTrayMenu::new()
@@ -94,24 +96,15 @@ fn main() {
             let icon_path = get_icon_path_from_direction(&direction, &glucose_value_str);
             let icon = create_icon_from_path(&icon_path).unwrap();
             handle.tray_handle().set_icon(icon).unwrap();
-            
 
             app.listen_global(UPDATE_GLUCOSE_EVENT_ID, move |_| {
                 let item_handle = handle.tray_handle().get_item(TRAY_MENU_ITEM_GLUCOSE_ENTRY);
                 let (glucose_value_str, direction) = get_glucose_data().unwrap();
-                // let glucose_value: f64 = glucose_value_str.parse().unwrap_or(-1.0);
-                
-                // let icon_path = if glucose_value < 13.0 {
-                //     "icons/glucmon_icon.png"
-                // } else {
-                //     "icons/glucmon_icon2.png"
-                // };
 
                 let icon_path = get_icon_path_from_direction(&direction, &glucose_value_str);
                 let icon = create_icon_from_path(&icon_path).unwrap();
                 handle.tray_handle().set_icon(icon).unwrap();
                 item_handle.set_title(glucose_value_str).unwrap();
-                
             });
 
             let handle = app.handle();

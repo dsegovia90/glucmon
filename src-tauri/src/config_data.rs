@@ -11,6 +11,7 @@ pub fn initialize_config_data(app: &tauri::App) -> anyhow::Result<()> {
         .read(true)
         .write(true)
         .create(true)
+        .truncate(true)
         .open(data_file)?;
 
     let mut contents = String::new();

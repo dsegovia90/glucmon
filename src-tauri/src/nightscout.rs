@@ -1,9 +1,6 @@
 use dotenv_codegen::dotenv;
 use serde::Deserialize;
-use std::{
-    io::Read,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 pub enum Direction {
@@ -66,7 +63,7 @@ pub fn get_glucose_data() -> anyhow::Result<(String, Direction)> {
     let last_entry = data.first().unwrap();
     let divider = if is_mmmol == "true" { 18.0 } else { 1.0 };
     let glucose_value = last_entry.sgv / divider;
-    let direction = last_entry.direction.clone();
+    let direction = last_entry.direction;
     let start = SystemTime::now();
     let since_the_epoch = start
         .duration_since(UNIX_EPOCH)
@@ -78,4 +75,3 @@ pub fn get_glucose_data() -> anyhow::Result<(String, Direction)> {
 
     Ok((str, direction))
 }
-
