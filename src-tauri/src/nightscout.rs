@@ -1,6 +1,8 @@
-use dotenv_codegen::dotenv;
 use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::Manager;
+
+use crate::Storage;
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 pub enum Direction {
@@ -43,11 +45,15 @@ struct NightscoutEntry {
     mills: u128,
 }
 
-pub fn get_glucose_data() -> anyhow::Result<(String, Direction)> {
+pub fn get_glucose_data(app: tauri::AppHandle) -> anyhow::Result<(String, Direction)> {
     let reqwest = reqwest::blocking::Client::new();
-    let nightscout_url = dotenv!("NIGHTSCOUT_URL");
-    let nightscout_api_token = dotenv!("NIGHTSCOUT_API_TOKEN");
-    let is_mmmol = dotenv!("IS_MMMOL");
+    let glucmon_config_store = &app.state::<Storage>().config;
+    let glucmon_config = glucmon_config_store
+        .lock()
+        .expect("Could not lock glucmon_config_store_mutex.");
+    let nightscout_url = &glucmon_config.nightscout_url;
+    let nightscout_api_token = &glucmon_config.nightscout_api_token;
+    let is_mmmol = glucmon_config.is_mmmol;
 
     let response = reqwest
         .get(format!("{nightscout_url}/api/v1/entries"))
@@ -61,7 +67,7 @@ pub fn get_glucose_data() -> anyhow::Result<(String, Direction)> {
     data.sort_by(|a, b| b.date.cmp(&a.date));
 
     let last_entry = data.first().unwrap();
-    let divider = if is_mmmol == "true" { 18.0 } else { 1.0 };
+    let divider = if is_mmmol { 18.0 } else { 1.0 };
     let glucose_value = last_entry.sgv / divider;
     let direction = last_entry.direction;
     let start = SystemTime::now();
