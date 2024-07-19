@@ -7,18 +7,30 @@
   },
   "package": {
     "productName": "glucmon",
-    "version": "0.0.0"
+    "version": "0.1.0"
   },
   "tauri": {
+    "windows": [
+      {
+        "visible": false,
+        "decorations": false
+      }
+    ],
     "systemTray": {
       "iconPath": "icons/tray/glucmon_icon.png",
       "iconAsTemplate": false
     },
     "allowlist": {
       "all": false,
+      "window": {
+        "close": true
+      },
       "shell": {
         "all": false,
         "open": true
+      },
+      "fs": {
+        "all": true
       }
     },
     "security": {
@@ -34,6 +46,9 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "resources": [
+        "icons/tray/*"
       ]
     }
   }
