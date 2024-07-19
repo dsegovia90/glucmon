@@ -61,11 +61,7 @@ impl GlucmonConfigStore {
             }
         };
 
-        self.update_config(
-            json.nightscout_url,
-            json.nightscout_api_token,
-            json.is_mmmol,
-        );
+        *self = json;
 
         Ok(())
     }

@@ -149,6 +149,7 @@ fn main() {
             thread::spawn(move || loop {
                 let binding = handle.state::<Storage>();
                 let is_set = binding.config.lock().unwrap().is_set;
+                dbg!(is_set);
                 if is_set {
                     handle.trigger_global(UPDATE_GLUCOSE_EVENT_ID, None);
                 }
@@ -166,8 +167,6 @@ fn main() {
                 handle.tray_handle().set_icon(icon).unwrap();
                 item_handle.set_title(glucose_value_str).unwrap();
             });
-
-            // let handle = app.handle();
 
             Ok(())
         })

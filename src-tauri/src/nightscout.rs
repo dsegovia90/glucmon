@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
+use url::Url;
 
 use crate::Storage;
 
@@ -51,12 +52,16 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> anyhow::Result<(String, Direct
     let glucmon_config = glucmon_config_store
         .lock()
         .expect("Could not lock glucmon_config_store_mutex.");
-    let nightscout_url = &glucmon_config.nightscout_url;
+    let nightscout_url = Url::parse(&glucmon_config.nightscout_url)
+        .unwrap()
+        .join("/api/v1/entries")
+        .unwrap();
+    dbg!(&nightscout_url);
     let nightscout_api_token = &glucmon_config.nightscout_api_token;
     let is_mmmol = glucmon_config.is_mmmol;
 
     let response = reqwest
-        .get(format!("{nightscout_url}/api/v1/entries"))
+        .get(nightscout_url)
         .header("accept", "application/json")
         .header("api-secret", nightscout_api_token)
         .query(&[("count", "1")])
