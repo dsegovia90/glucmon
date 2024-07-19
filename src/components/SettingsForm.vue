@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/tauri";
+import { appWindow } from "@tauri-apps/api/window";
 
 interface GlucmonConfig {
   nightscoutUrl: string;
@@ -24,6 +25,7 @@ async function updateGlucmonConfig() {
   glucmonConfig.value = await invoke("set_glucmon_config", {
     formConfigValues: glucmonConfig.value,
   });
+  await appWindow.close();
 }
 
 onMounted(async () => {
