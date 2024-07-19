@@ -10,6 +10,12 @@
     "version": "0.1.0"
   },
   "tauri": {
+    "windows": [
+      {
+        "visible": false,
+        "decorations": false
+      }
+    ],
     "systemTray": {
       "iconPath": "icons/tray/glucmon_icon.png",
       "iconAsTemplate": false
@@ -38,9 +44,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": [
-        "icons/tray/*"
-      ]
+      "resources": ["icons/tray/*"]
     }
   }
 }

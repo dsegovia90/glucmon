@@ -61,28 +61,33 @@ watch(glucmonConfig, () => {
       id="apitoken"
       class="block border rounded px-2 py-1"
       v-model="glucmonConfig.nightscoutApiToken"
-      placeholder="Enter a api token..."
+      placeholder="Enter api token..."
     />
-
-    <div class="flex gap-4 mb-8">
-      <p class="text-sm font-medium text-gray-900 dark:text-gray-300">mg/dL</p>
-      <label class="inline-flex items-center cursor-pointer">
-        <input
-          v-model="glucmonConfig.isMmmol"
-          type="checkbox"
-          id="units"
-          class="sr-only peer"
-        />
-        <div
-          class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
-        />
-      </label>
-      <p class="text-sm font-medium text-gray-900 dark:text-gray-300">mmol/L</p>
+    <div class="flex justify-center">
+      <div class="flex gap-4 mb-8">
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-300">
+          mg/dL
+        </p>
+        <label class="inline-flex items-center cursor-pointer">
+          <input
+            v-model="glucmonConfig.isMmmol"
+            type="checkbox"
+            id="units"
+            class="sr-only peer"
+          />
+          <div
+            class="relative w-11 h-6 bg-gray-400 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-500 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600"
+          />
+        </label>
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-300">
+          mmol/L
+        </p>
+      </div>
     </div>
 
     <button
       type="submit"
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      class="bg-cyan-500 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors"
     >
       Save
     </button>
@@ -91,6 +96,6 @@ watch(glucmonConfig, () => {
 
 <style scoped lang="scss">
 input[type="text"] {
-  @apply block w-full border rounded px-2 py-1 mb-8;
+  @apply block w-full border rounded-md px-2 py-1 mb-8;
 }
 </style>
