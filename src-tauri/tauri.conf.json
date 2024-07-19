@@ -19,6 +19,9 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "fs": {
+        "all": true
       }
     },
     "security": {
@@ -34,6 +37,9 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "resources": [
+        "icons/tray/*"
       ]
     }
   }

@@ -1,6 +1,5 @@
 use std::fs::{create_dir_all, OpenOptions};
 use std::io::Read;
-use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -31,10 +30,6 @@ impl GlucmonConfigStore {
             is_mmmol: true,
             is_set: false,
         }
-    }
-
-    pub fn is_configured(&self) -> bool {
-        self.is_set
     }
 
     pub fn initialize(&mut self, app: tauri::AppHandle) -> anyhow::Result<()> {
