@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::{sync::Mutex, thread};
 use tauri::{
     AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
-    SystemTrayMenuItem,
+    SystemTrayMenuItem, UserAttentionType,
 };
 
 #[derive(Debug)]
@@ -100,7 +100,6 @@ fn get_icon_path_from_direction(
                 .expect("failed to resolve resource")
         }
     };
-    dbg!("{}tray_{}_{}.png", base_path, severity, direction_str);
 
     app.path_resolver()
         .resolve_resource(format!(
@@ -149,7 +148,6 @@ fn main() {
             thread::spawn(move || loop {
                 let binding = handle.state::<Storage>();
                 let is_set = binding.config.lock().unwrap().is_set;
-                dbg!(is_set);
                 if is_set {
                     handle.trigger_global(UPDATE_GLUCOSE_EVENT_ID, None);
                 }
@@ -180,15 +178,24 @@ fn main() {
                     app.exit(0)
                 }
                 if TRAY_MENU_ITEM_OPEN_SETTINGS == id.as_str() {
-                    tauri::WindowBuilder::new(
-                        app,
-                        "local",
-                        tauri::WindowUrl::App("index.html".into()),
-                    )
-                    .inner_size(400.0, 400.0)
-                    .title("Glucmon | Settings")
-                    .build()
-                    .expect("Could not create settings window.");
+                    if let Some(window) = app.get_window("settings") {
+                        window.center().unwrap();
+                        window.show().unwrap();
+                        window.set_focus().unwrap();
+                        window
+                            .request_user_attention(Some(UserAttentionType::Informational))
+                            .unwrap();
+                    } else {
+                        tauri::WindowBuilder::new(
+                            app,
+                            "settings",
+                            tauri::WindowUrl::App("index.html".into()),
+                        )
+                        .inner_size(400.0, 400.0)
+                        .title("Glucmon | Settings")
+                        .build()
+                        .expect("Could not create settings window.");
+                    }
                 }
             }
         });

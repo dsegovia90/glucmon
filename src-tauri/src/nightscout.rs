@@ -56,7 +56,6 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> anyhow::Result<(String, Direct
         .unwrap()
         .join("/api/v1/entries")
         .unwrap();
-    dbg!(&nightscout_url);
     let nightscout_api_token = &glucmon_config.nightscout_api_token;
     let is_mmmol = glucmon_config.is_mmmol;
 

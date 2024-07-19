@@ -119,11 +119,8 @@ pub fn set_glucmon_config(
         form_config_values.nightscout_api_token,
         form_config_values.is_mmmol,
     );
-    dbg!(&state);
 
     state.clone().save_to_disk(app).unwrap();
-
-    dbg!(&state);
 
     Ok(state.clone())
 }
