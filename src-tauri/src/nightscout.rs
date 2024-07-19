@@ -5,6 +5,25 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+#[derive(Debug, Deserialize, Clone, Copy)]
+pub enum Direction {
+    Flat,
+    FortyFiveUp,
+    FortyFiveDown,
+    SingleUp,
+    SingleDown,
+    DoubleUp,
+    DoubleDown,
+    TripleUp,
+    TripleDown,
+    #[serde(rename = "RATE OUT OF RANGE")]
+    RateOutOfRange,
+    #[serde(rename = "NOT COMPUTABLE")]
+    NotComputable,
+    #[serde(rename = "NONE")]
+    None,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
@@ -16,7 +35,7 @@ struct NightscoutEntry {
     date_string: String,
     sgv: f32,
     delta: f32,
-    direction: String,
+    direction: Direction,
     r#type: String,
     filtered: u32,
     unfiltered: u32,
@@ -27,7 +46,7 @@ struct NightscoutEntry {
     mills: u128,
 }
 
-pub fn get_glucose_data() -> anyhow::Result<(String, String)> {
+pub fn get_glucose_data() -> anyhow::Result<(String, Direction)> {
     let reqwest = reqwest::blocking::Client::new();
     let nightscout_url = dotenv!("NIGHTSCOUT_URL");
     let nightscout_api_token = dotenv!("NIGHTSCOUT_API_TOKEN");
