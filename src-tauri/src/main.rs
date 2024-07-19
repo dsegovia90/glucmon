@@ -193,6 +193,8 @@ fn main() {
                         )
                         .inner_size(400.0, 400.0)
                         .title("Glucmon | Settings")
+                        .maximizable(false)
+                        .minimizable(false)
                         .build()
                         .expect("Could not create settings window.");
                     }
