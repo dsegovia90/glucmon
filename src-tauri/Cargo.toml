@@ -18,6 +18,7 @@ reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 anyhow = "1.0.82"
 image = "0.23"
 url = "2.5.2"
+derive_more = "0.99.18"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
