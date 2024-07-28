@@ -2,12 +2,21 @@ use derive_more::From;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[allow(dead_code)]
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
     Custom(String),
 
     // -- Externals
+    #[from]
+    Url(url::ParseError),
+    #[from]
+    Reqwest(reqwest::Error),
+    #[from]
+    Mutex(std::sync::mpsc::RecvError),
+    #[from]
+    SerdeJson(serde_json::Error),
     #[from]
     Io(std::io::Error),
     #[from]

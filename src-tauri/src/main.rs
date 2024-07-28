@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod commands;
 mod config_data;
 mod error;
 mod nightscout;
@@ -13,14 +14,15 @@ static TRAY_MENU_ITEM_OPEN_SETTINGS_DISPLAY: &str = "Settings";
 static TRAY_MENU_ITEM_QUIT_ENTRY: &str = "tray_menu_item_quit_entry";
 static TRAY_MENU_ITEM_QUIT_DISPLAY: &str = "Quit Glucmon Completely";
 
-use config_data::{get_glucmon_config, set_glucmon_config, GlucmonConfigStore};
+use commands::{get_glucmon_config, set_glucmon_config};
+use config_data::GlucmonConfigStore;
 use nightscout::{get_glucose_data, Direction};
 use std::{sync::Mutex, thread};
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
     UserAttentionType,
 };
-use utils::{create_icon_from_path, get_icon_path_from_direction};
+use utils::{create_icon_from_path, get_error_icon, get_icon_path_from_direction};
 
 #[derive(Debug)]
 struct Storage {
@@ -55,7 +57,10 @@ fn main() {
 
             let handle = app.handle();
 
-            let icon_path = get_icon_path_from_direction(&handle, &Direction::None, "--");
+            let icon_path = match get_icon_path_from_direction(&handle, &Direction::None, "--") {
+                Ok(path) => path,
+                Err(_) => get_error_icon(&handle),
+            };
             let icon = create_icon_from_path(&icon_path).unwrap();
             handle.tray_handle().set_icon(icon).unwrap();
 
@@ -77,9 +82,18 @@ fn main() {
 
             app.listen_global(UPDATE_GLUCOSE_EVENT_ID, move |_| {
                 let item_handle = handle.tray_handle().get_item(TRAY_MENU_ITEM_GLUCOSE_ENTRY);
-                let (glucose_value_str, direction) = get_glucose_data(handle.app_handle()).unwrap();
+                let (glucose_value_str, direction) = match get_glucose_data(handle.app_handle()) {
+                    Ok((data, dir)) => (data, dir),
+                    Err(_) => (
+                        "-- Lost connection --".to_string(),
+                        Direction::NotComputable,
+                    ),
+                };
                 let icon_path =
-                    get_icon_path_from_direction(&handle, &direction, &glucose_value_str);
+                    match get_icon_path_from_direction(&handle, &direction, &glucose_value_str) {
+                        Ok(path) => path,
+                        Err(_) => get_error_icon(&handle),
+                    };
                 let icon = create_icon_from_path(&icon_path).unwrap();
                 handle.tray_handle().set_icon(icon).unwrap();
                 item_handle.set_title(glucose_value_str).unwrap();

@@ -1,4 +1,7 @@
-use crate::nightscout::Direction;
+use crate::{
+    error::{Error, Result},
+    nightscout::Direction,
+};
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -6,7 +9,7 @@ pub fn get_icon_path_from_direction(
     app: &AppHandle,
     direction: &Direction,
     glucose_value: &str,
-) -> PathBuf {
+) -> Result<PathBuf> {
     let base_path = "icons/tray/";
 
     // Parse the glucose_value string to f64
@@ -18,13 +21,13 @@ pub fn get_icon_path_from_direction(
             return app
                 .path_resolver()
                 .resolve_resource(format!("{}glucmon_icon_NOT-CONFIGURED.png", base_path))
-                .expect("failed to resolve resource")
+                .ok_or(Error::custom("Could not resolve resource. "))
         }
     };
 
     let severity = match glucose_f64 {
         v if v < 3.0 => "urgent",
-        v if v < 3.885 => "concern",
+        v if v < 4.0 => "concern",
         v if v < 10.0 => "normal",
         v if v < 13.875 => "concern",
         _ => "urgent",
@@ -44,19 +47,19 @@ pub fn get_icon_path_from_direction(
             return app
                 .path_resolver()
                 .resolve_resource(format!("{}glucmon_icon_NOT-WORKING.png", base_path))
-                .expect("failed to resolve resource")
+                .ok_or(Error::custom("Could not resolve resource."))
         }
         Direction::NotComputable => {
             return app
                 .path_resolver()
                 .resolve_resource(format!("{}glucmon_icon_NOT-WORKING.png", base_path))
-                .expect("failed to resolve resource")
+                .ok_or(Error::custom("Could not resolve resource."))
         }
         Direction::None => {
             return app
                 .path_resolver()
                 .resolve_resource(format!("{}glucmon_icon.png", base_path))
-                .expect("failed to resolve resource")
+                .ok_or(Error::custom("Could not resolve resource."))
         }
     };
 
@@ -65,5 +68,5 @@ pub fn get_icon_path_from_direction(
             "{}tray_{}_{}.png",
             base_path, severity, direction_str
         ))
-        .expect("failed to resolve resource")
+        .ok_or(Error::custom("Could not resolve resource."))
 }
