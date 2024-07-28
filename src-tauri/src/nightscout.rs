@@ -3,7 +3,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 use url::Url;
 
-use crate::Storage;
+use crate::{
+    error::{Error, Result},
+    Storage,
+};
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 pub enum Direction {
@@ -46,16 +49,11 @@ struct NightscoutEntry {
     mills: u128,
 }
 
-pub fn get_glucose_data(app: tauri::AppHandle) -> anyhow::Result<(String, Direction)> {
+pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction)> {
     let reqwest = reqwest::blocking::Client::new();
     let glucmon_config_store = &app.state::<Storage>().config;
-    let glucmon_config = glucmon_config_store
-        .lock()
-        .expect("Could not lock glucmon_config_store_mutex.");
-    let nightscout_url = Url::parse(&glucmon_config.nightscout_url)
-        .unwrap()
-        .join("/api/v1/entries")
-        .unwrap();
+    let glucmon_config = glucmon_config_store.lock().map_err(Error::custom)?;
+    let nightscout_url = Url::parse(&glucmon_config.nightscout_url)?.join("/api/v1/entries")?;
     let nightscout_api_token = &glucmon_config.nightscout_api_token;
     let is_mmmol = glucmon_config.is_mmmol;
 
@@ -70,7 +68,9 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> anyhow::Result<(String, Direct
 
     data.sort_by(|a, b| b.date.cmp(&a.date));
 
-    let last_entry = data.first().unwrap();
+    let last_entry = data
+        .first()
+        .ok_or(Error::custom("Could not extract data.first()."))?;
     let divider = if is_mmmol { 18.0 } else { 1.0 };
     let glucose_value = last_entry.sgv / divider;
     let direction = last_entry.direction;

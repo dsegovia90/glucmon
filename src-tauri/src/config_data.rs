@@ -1,10 +1,7 @@
+use crate::error::{Error, Result};
+use serde::{Deserialize, Serialize};
 use std::fs::{create_dir_all, OpenOptions};
 use std::io::Read;
-
-use serde::{Deserialize, Serialize};
-use tauri::State;
-
-use crate::Storage;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -32,11 +29,11 @@ impl GlucmonConfigStore {
         }
     }
 
-    pub fn initialize(&mut self, app: tauri::AppHandle) -> anyhow::Result<()> {
+    pub fn initialize(&mut self, app: tauri::AppHandle) -> Result<()> {
         let data_dir = app
             .path_resolver()
             .app_data_dir()
-            .expect("Could not create/open data_dir folder.");
+            .ok_or(Error::custom("Could not resolve app data dir."))?;
         create_dir_all(&data_dir)?;
 
         let data_file = data_dir.join("data.json");
@@ -78,11 +75,11 @@ impl GlucmonConfigStore {
         self.is_set = true;
     }
 
-    pub fn save_to_disk(self, app: tauri::AppHandle) -> anyhow::Result<()> {
+    pub fn save_to_disk(self, app: tauri::AppHandle) -> Result<()> {
         let data_dir = app
             .path_resolver()
             .app_data_dir()
-            .expect("Could not create/open data_dir folder.");
+            .ok_or(Error::custom("Could not resolve app data dir."))?;
         create_dir_all(&data_dir)?;
 
         let data_file = data_dir.join("data.json");
@@ -100,39 +97,4 @@ impl GlucmonConfigStore {
     fn set_to_true() -> bool {
         true
     }
-}
-
-#[tauri::command]
-pub fn set_glucmon_config(
-    form_config_values: GlucmonConfigStore,
-    glucmon_config_store_mutex: State<'_, Storage>,
-    app: tauri::AppHandle,
-) -> Result<GlucmonConfigStore, String> {
-    dbg!("Setting glucmon config to state.", &form_config_values);
-    let mut state = glucmon_config_store_mutex
-        .config
-        .lock()
-        .expect("Could not lock glucmon_config_store_mutex.");
-
-    state.update_config(
-        form_config_values.nightscout_url,
-        form_config_values.nightscout_api_token,
-        form_config_values.is_mmmol,
-    );
-
-    state.clone().save_to_disk(app).unwrap();
-
-    Ok(state.clone())
-}
-
-#[tauri::command]
-pub fn get_glucmon_config(
-    glucmon_config_store_mutex: State<'_, Storage>,
-) -> Result<GlucmonConfigStore, String> {
-    dbg!("Getting glucmon config from state.");
-    let state = glucmon_config_store_mutex
-        .config
-        .lock()
-        .expect("Could not lock glucmon_config_store_mutex.");
-    Ok(state.clone())
 }
