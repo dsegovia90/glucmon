@@ -7,7 +7,6 @@ pub fn set_glucmon_config(
     glucmon_config_store_mutex: State<'_, Storage>,
     app: tauri::AppHandle,
 ) -> std::result::Result<GlucmonConfigStore, String> {
-    dbg!("Setting glucmon config to state.", &form_config_values);
     let mut state = glucmon_config_store_mutex
         .config
         .lock()
@@ -28,7 +27,6 @@ pub fn set_glucmon_config(
 pub fn get_glucmon_config(
     glucmon_config_store_mutex: State<'_, Storage>,
 ) -> std::result::Result<GlucmonConfigStore, String> {
-    dbg!("Getting glucmon config from state.");
     let state = glucmon_config_store_mutex
         .config
         .lock()

@@ -27,6 +27,7 @@ use utils::{create_icon_from_path, get_error_icon, get_icon_path_from_direction}
 #[derive(Debug)]
 struct Storage {
     config: Mutex<GlucmonConfigStore>,
+    last_timestamp: Mutex<Option<u128>>,
 }
 
 fn main() {
@@ -50,6 +51,7 @@ fn main() {
             config: Mutex::new(GlucmonConfigStore {
                 ..Default::default()
             }),
+            last_timestamp: Mutex::new(None),
         })
         .setup(move |app| {
             #[cfg(target_os = "macos")]
@@ -82,13 +84,37 @@ fn main() {
 
             app.listen_global(UPDATE_GLUCOSE_EVENT_ID, move |_| {
                 let item_handle = handle.tray_handle().get_item(TRAY_MENU_ITEM_GLUCOSE_ENTRY);
-                let (glucose_value_str, direction) = match get_glucose_data(handle.app_handle()) {
-                    Ok((data, dir)) => (data, dir),
-                    Err(_) => (
-                        "-- Lost connection --".to_string(),
-                        Direction::NotComputable,
-                    ),
+                let (glucose_value_str, direction, timestamp) =
+                    match get_glucose_data(handle.app_handle()) {
+                        Ok((data, dir, time)) => (data, dir, time),
+                        Err(e) => {
+                            dbg!(e);
+                            (
+                                "-- Lost connection --".to_string(),
+                                Direction::NotComputable,
+                                0,
+                            )
+                        }
+                    };
+                let binding = handle.state::<Storage>();
+                let is_new = {
+                    let last_timestamp = binding.last_timestamp.lock().unwrap();
+                    if last_timestamp.is_none() {
+                        true
+                    } else {
+                        last_timestamp.unwrap() != timestamp
+                    }
                 };
+
+                {
+                    let mut state = binding.last_timestamp.lock().unwrap();
+                    *state = Some(timestamp);
+                }
+
+                if !is_new {
+                    return ();
+                }
+
                 let icon_path =
                     match get_icon_path_from_direction(&handle, &direction, &glucose_value_str) {
                         Ok(path) => path,

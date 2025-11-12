@@ -38,8 +38,6 @@ impl GlucmonConfigStore {
 
         let data_file = data_dir.join("data.json");
 
-        dbg!("Reading/writing to json file: {}", &data_file);
-
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -52,10 +50,7 @@ impl GlucmonConfigStore {
 
         let json = match serde_json::from_str(&contents) {
             Ok(json) => json,
-            Err(err) => {
-                dbg!("Failed to load json, creating from scratch. Error: {}", err);
-                Self::new()
-            }
+            Err(err) => Self::new(),
         };
 
         *self = json;
