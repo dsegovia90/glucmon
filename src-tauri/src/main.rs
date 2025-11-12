@@ -7,7 +7,6 @@ mod error;
 mod nightscout;
 mod utils;
 
-static UPDATE_GLUCOSE_EVENT_ID: &str = "update_glucose";
 static TRAY_MENU_ITEM_GLUCOSE_ENTRY: &str = "tray_menu_item_glucose_entry";
 static TRAY_MENU_ITEM_OPEN_SETTINGS: &str = "tray_menu_item_settings";
 static TRAY_MENU_ITEM_OPEN_SETTINGS_DISPLAY: &str = "Settings";
@@ -16,7 +15,7 @@ static TRAY_MENU_ITEM_QUIT_DISPLAY: &str = "Quit Glucmon Completely";
 
 use commands::{get_glucmon_config, set_glucmon_config};
 use config_data::GlucmonConfigStore;
-use nightscout::{get_glucose_data, Direction};
+use nightscout::{format_glucose_display, get_glucose_data, Direction};
 use std::{sync::Mutex, thread};
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
@@ -28,7 +27,12 @@ use utils::{create_icon_from_path, get_error_icon, get_icon_path_from_direction}
 struct Storage {
     config: Mutex<GlucmonConfigStore>,
     last_timestamp: Mutex<Option<u128>>,
+    glucose_value: Mutex<Option<f32>>,
+    direction: Mutex<Direction>,
 }
+
+const POLL_INTERVAL_MS: u64 = 5 * 1000; // 5 seconds when expecting new data
+const DATA_EXPECTED_AFTER_MS: u128 = 5 * 60 * 1000; // Expect new data after 5 minutes
 
 fn main() {
     let tray_menu_glucose_data_item = CustomMenuItem::new(TRAY_MENU_ITEM_GLUCOSE_ENTRY, "--");
@@ -52,6 +56,8 @@ fn main() {
                 ..Default::default()
             }),
             last_timestamp: Mutex::new(None),
+            glucose_value: Mutex::new(None),
+            direction: Mutex::new(Direction::None),
         })
         .setup(move |app| {
             #[cfg(target_os = "macos")]
@@ -71,58 +77,141 @@ fn main() {
             config.initialize(handle.app_handle()).unwrap();
 
             let handle = app.handle();
-            thread::spawn(move || loop {
-                let binding = handle.state::<Storage>();
-                let is_set = binding.config.lock().unwrap().is_set;
-                if is_set {
-                    handle.trigger_global(UPDATE_GLUCOSE_EVENT_ID, None);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(2000));
-            });
+            thread::spawn(move || {
+                let mut last_fetch_time: Option<u128> = None;
 
-            let handle = app.handle();
+                loop {
+                    let binding = handle.state::<Storage>();
+                    let is_set = binding.config.lock().unwrap().is_set;
 
-            app.listen_global(UPDATE_GLUCOSE_EVENT_ID, move |_| {
-                let item_handle = handle.tray_handle().get_item(TRAY_MENU_ITEM_GLUCOSE_ENTRY);
-                let (glucose_value_str, direction, timestamp) =
-                    match get_glucose_data(handle.app_handle()) {
-                        Ok((data, dir, time)) => (data, dir, time),
-                        Err(e) => {
-                            dbg!(e);
-                            (
-                                "-- Lost connection --".to_string(),
-                                Direction::NotComputable,
-                                0,
-                            )
+                    if is_set {
+                        let item_handle =
+                            handle.tray_handle().get_item(TRAY_MENU_ITEM_GLUCOSE_ENTRY);
+
+                        // Determine if we should fetch new data
+                        let should_fetch = {
+                            let last_timestamp = binding.last_timestamp.lock().unwrap();
+
+                            if last_timestamp.is_none() {
+                                // First time, fetch immediately
+                                true
+                            } else {
+                                let timestamp = last_timestamp.unwrap();
+                                let current_time = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_millis();
+                                let time_since_data = current_time - timestamp;
+
+                                // Fetch if data is older than 5 minutes and we haven't fetched recently
+                                if time_since_data > DATA_EXPECTED_AFTER_MS {
+                                    // Check if enough time passed since last fetch attempt
+                                    if let Some(last_fetch) = last_fetch_time {
+                                        (current_time - last_fetch) >= POLL_INTERVAL_MS as u128
+                                    } else {
+                                        true
+                                    }
+                                } else {
+                                    // Check if it's time for the next expected data
+                                    time_since_data >= DATA_EXPECTED_AFTER_MS
+                                }
+                            }
+                        };
+
+                        // Fetch new data if needed
+                        if should_fetch {
+                            let current_time = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis();
+                            last_fetch_time = Some(current_time);
+
+                            match get_glucose_data(handle.app_handle()) {
+                                Ok((glucose_value, direction, timestamp)) => {
+                                    let binding = handle.state::<Storage>();
+                                    let is_new = {
+                                        let last_timestamp = binding.last_timestamp.lock().unwrap();
+                                        last_timestamp.is_none()
+                                            || last_timestamp.unwrap() != timestamp
+                                    };
+
+                                    if is_new {
+                                        // Store new values
+                                        {
+                                            let mut state = binding.last_timestamp.lock().unwrap();
+                                            *state = Some(timestamp);
+                                        }
+                                        {
+                                            let mut state = binding.glucose_value.lock().unwrap();
+                                            *state = Some(glucose_value);
+                                        }
+                                        {
+                                            let mut state = binding.direction.lock().unwrap();
+                                            *state = direction;
+                                        }
+
+                                        // Update icon
+                                        let glucose_display =
+                                            format_glucose_display(glucose_value, timestamp);
+                                        let icon_path = match get_icon_path_from_direction(
+                                            &handle,
+                                            &direction,
+                                            &glucose_display,
+                                        ) {
+                                            Ok(path) => path,
+                                            Err(_) => get_error_icon(&handle),
+                                        };
+                                        let icon = create_icon_from_path(&icon_path).unwrap();
+                                        handle.tray_handle().set_icon(icon).unwrap();
+                                    }
+                                }
+                                Err(e) => {
+                                    dbg!(e);
+                                    item_handle.set_title("-- Lost connection --").unwrap();
+                                }
+                            }
                         }
-                    };
-                let binding = handle.state::<Storage>();
-                let is_new = {
-                    let last_timestamp = binding.last_timestamp.lock().unwrap();
-                    if last_timestamp.is_none() {
-                        true
+
+                        // Update display with current "X mins ago" regardless of fetch
+                        let binding = handle.state::<Storage>();
+                        let last_timestamp = binding.last_timestamp.lock().unwrap();
+                        let glucose_value = binding.glucose_value.lock().unwrap();
+
+                        if let (Some(timestamp), Some(value)) = (*last_timestamp, *glucose_value) {
+                            let glucose_display = format_glucose_display(value, timestamp);
+                            item_handle.set_title(glucose_display).unwrap();
+
+                            // Calculate how old the data is and determine sleep time
+                            let current_time = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis();
+                            let time_since_data = current_time - timestamp;
+
+                            if time_since_data > DATA_EXPECTED_AFTER_MS {
+                                // Data is stale, poll frequently
+                                std::thread::sleep(std::time::Duration::from_millis(
+                                    POLL_INTERVAL_MS,
+                                ));
+                            } else {
+                                // Data is fresh, wait until next minute boundary for display update
+                                let seconds_into_current_minute = (time_since_data % 60000) / 1000;
+                                let seconds_until_next_minute = 60 - seconds_into_current_minute;
+
+                                // Wait until the next minute boundary (when "X mins ago" will change)
+                                std::thread::sleep(std::time::Duration::from_secs(
+                                    seconds_until_next_minute as u64,
+                                ));
+                            }
+                        } else {
+                            // No data yet, check again in 1 second
+                            std::thread::sleep(std::time::Duration::from_secs(1));
+                        }
                     } else {
-                        last_timestamp.unwrap() != timestamp
+                        // Config not set, wait a bit before checking again
+                        std::thread::sleep(std::time::Duration::from_millis(2000));
                     }
-                };
-
-                {
-                    let mut state = binding.last_timestamp.lock().unwrap();
-                    *state = Some(timestamp);
                 }
-
-                if !is_new {
-                    return ();
-                }
-
-                let icon_path =
-                    match get_icon_path_from_direction(&handle, &direction, &glucose_value_str) {
-                        Ok(path) => path,
-                        Err(_) => get_error_icon(&handle),
-                    };
-                let icon = create_icon_from_path(&icon_path).unwrap();
-                handle.tray_handle().set_icon(icon).unwrap();
-                item_handle.set_title(glucose_value_str).unwrap();
             });
 
             Ok(())
