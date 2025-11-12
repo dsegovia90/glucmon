@@ -50,7 +50,7 @@ impl GlucmonConfigStore {
 
         let json = match serde_json::from_str(&contents) {
             Ok(json) => json,
-            Err(err) => Self::new(),
+            Err(_err) => Self::new(),
         };
 
         *self = json;

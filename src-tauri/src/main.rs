@@ -16,6 +16,7 @@ static TRAY_MENU_ITEM_QUIT_DISPLAY: &str = "Quit Glucmon Completely";
 use commands::{get_glucmon_config, set_glucmon_config};
 use config_data::GlucmonConfigStore;
 use nightscout::{format_glucose_display, get_glucose_data, Direction};
+use std::path::PathBuf;
 use std::{sync::Mutex, thread};
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
@@ -29,9 +30,11 @@ struct Storage {
     last_timestamp: Mutex<Option<u128>>,
     glucose_value: Mutex<Option<f32>>,
     direction: Mutex<Direction>,
+    last_display_text: Mutex<Option<String>>,
+    last_icon_path: Mutex<Option<PathBuf>>,
 }
 
-const POLL_INTERVAL_MS: u64 = 5 * 1000; // 5 seconds when expecting new data
+const POLL_INTERVAL_MS: u64 = 5 * 1000; // 15 seconds when expecting new data
 const DATA_EXPECTED_AFTER_MS: u128 = 5 * 60 * 1000; // Expect new data after 5 minutes
 
 fn main() {
@@ -58,6 +61,8 @@ fn main() {
             last_timestamp: Mutex::new(None),
             glucose_value: Mutex::new(None),
             direction: Mutex::new(Direction::None),
+            last_display_text: Mutex::new(None),
+            last_icon_path: Mutex::new(None),
         })
         .setup(move |app| {
             #[cfg(target_os = "macos")]
@@ -150,7 +155,7 @@ fn main() {
                                             *state = direction;
                                         }
 
-                                        // Update icon
+                                        // Update icon only if path changed
                                         let glucose_display =
                                             format_glucose_display(glucose_value, timestamp);
                                         let icon_path = match get_icon_path_from_direction(
@@ -161,25 +166,47 @@ fn main() {
                                             Ok(path) => path,
                                             Err(_) => get_error_icon(&handle),
                                         };
-                                        let icon = create_icon_from_path(&icon_path).unwrap();
-                                        handle.tray_handle().set_icon(icon).unwrap();
+
+                                        // Only create and set icon if path changed
+                                        let should_update_icon = {
+                                            let last_icon = binding.last_icon_path.lock().unwrap();
+                                            last_icon.as_ref() != Some(&icon_path)
+                                        };
+
+                                        if should_update_icon {
+                                            let icon = create_icon_from_path(&icon_path).unwrap();
+                                            handle.tray_handle().set_icon(icon).unwrap();
+                                            let mut last_icon =
+                                                binding.last_icon_path.lock().unwrap();
+                                            *last_icon = Some(icon_path);
+                                        }
                                     }
                                 }
-                                Err(e) => {
-                                    dbg!(e);
+                                Err(_e) => {
                                     item_handle.set_title("-- Lost connection --").unwrap();
                                 }
                             }
                         }
 
-                        // Update display with current "X mins ago" regardless of fetch
+                        // Update display with current "X mins ago" only if it changed
                         let binding = handle.state::<Storage>();
                         let last_timestamp = binding.last_timestamp.lock().unwrap();
                         let glucose_value = binding.glucose_value.lock().unwrap();
 
                         if let (Some(timestamp), Some(value)) = (*last_timestamp, *glucose_value) {
                             let glucose_display = format_glucose_display(value, timestamp);
-                            item_handle.set_title(glucose_display).unwrap();
+
+                            // Only update if the display text actually changed
+                            let should_update = {
+                                let last_display = binding.last_display_text.lock().unwrap();
+                                last_display.as_ref() != Some(&glucose_display)
+                            };
+
+                            if should_update {
+                                item_handle.set_title(&glucose_display).unwrap();
+                                let mut last_display = binding.last_display_text.lock().unwrap();
+                                *last_display = Some(glucose_display);
+                            }
 
                             // Calculate how old the data is and determine sleep time
                             let current_time = std::time::SystemTime::now()
