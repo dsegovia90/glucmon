@@ -49,7 +49,7 @@ struct NightscoutEntry {
     mills: u128,
 }
 
-pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction, u128)> {
+pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(f32, Direction, u128)> {
     let reqwest = reqwest::blocking::Client::new();
     let glucmon_config_store = &app.state::<Storage>().config;
     let glucmon_config = glucmon_config_store.lock().map_err(Error::custom)?;
@@ -73,14 +73,17 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction, u12
     let divider = if is_mmmol { 18.0 } else { 1.0 };
     let glucose_value = last_entry.sgv / divider;
     let direction = last_entry.direction;
+
+    Ok((glucose_value, direction, last_entry.date))
+}
+
+pub fn format_glucose_display(glucose_value: f32, timestamp: u128) -> String {
     let start = SystemTime::now();
     let since_the_epoch = start
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
 
-    let mins_ago = (since_the_epoch.as_millis() - last_entry.date) / 60000;
+    let mins_ago = (since_the_epoch.as_millis() - timestamp) / 60000;
 
-    let str = format!("{glucose_value:.1} - {mins_ago} mins ago.");
-
-    Ok((str, direction, last_entry.date))
+    format!("{glucose_value:.1} - {mins_ago} mins ago.")
 }
