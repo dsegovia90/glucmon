@@ -65,7 +65,6 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(f32, Direction, u128)>
         .send()?;
 
     let data = response.json::<Vec<NightscoutEntry>>()?;
-    dbg!(&data);
 
     let last_entry = data
         .first()
