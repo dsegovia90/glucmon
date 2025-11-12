@@ -35,7 +35,7 @@ struct NightscoutEntry {
     _id: String,
     device: String,
     date: u128,
-    date_string: String,
+    date_string: chrono::DateTime<chrono::Utc>,
     sgv: f32,
     delta: f32,
     direction: Direction,
@@ -49,7 +49,7 @@ struct NightscoutEntry {
     mills: u128,
 }
 
-pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction)> {
+pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction, u128)> {
     let reqwest = reqwest::blocking::Client::new();
     let glucmon_config_store = &app.state::<Storage>().config;
     let glucmon_config = glucmon_config_store.lock().map_err(Error::custom)?;
@@ -64,9 +64,8 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction)> {
         .query(&[("count", "1")])
         .send()?;
 
-    let mut data = response.json::<Vec<NightscoutEntry>>()?;
-
-    data.sort_by(|a, b| b.date.cmp(&a.date));
+    let data = response.json::<Vec<NightscoutEntry>>()?;
+    dbg!(&data);
 
     let last_entry = data
         .first()
@@ -83,5 +82,5 @@ pub fn get_glucose_data(app: tauri::AppHandle) -> Result<(String, Direction)> {
 
     let str = format!("{glucose_value:.1} - {mins_ago} mins ago.");
 
-    Ok((str, direction))
+    Ok((str, direction, last_entry.date))
 }
