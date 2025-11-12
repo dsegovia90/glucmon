@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "glucmon",
-    "version": "0.1.1"
+    "version": "0.2.0"
   },
   "tauri": {
     "windows": [
@@ -47,9 +47,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": [
-        "icons/tray/*"
-      ]
+      "resources": ["icons/tray/*"]
     }
   }
 }
